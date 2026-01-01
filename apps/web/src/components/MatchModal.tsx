@@ -89,9 +89,9 @@ function FaceitTable({ match }: { match: MatchStats }) {
   if (!team1 || !team2) return <div className="text-center text-muted-foreground py-8">No data available</div>;
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      <TeamCard team={team1} label="Team 1" />
-      <TeamCard team={team2} label="Team 2" />
+    <div className="space-y-6">
+      <CS2TeamCard team={team1} label="Team 1" color="blue" isFaceit={true} />
+      <CS2TeamCard team={team2} label="Team 2" color="amber" isFaceit={true} />
     </div>
   );
 }
@@ -222,7 +222,7 @@ function StatPill({ label, value, color }: { label: string; value: number; color
   );
 }
 
-function CS2TeamCard({ team, label, color }: any) {
+function CS2TeamCard({ team, label, color, isFaceit }: any) {
   const colorClasses = color === 'blue' 
     ? 'border-blue-500/30 bg-gradient-to-br from-blue-500/5 to-transparent'
     : 'border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-transparent';
@@ -236,7 +236,9 @@ function CS2TeamCard({ team, label, color }: any) {
       <div className="px-5 py-3 bg-zinc-900/80 border-b border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className={`px-3 py-1 ${bgColor} rounded-md`}>
-            <span className={`text-sm font-black ${textColor} uppercase tracking-wider`}>{label} SIDE</span>
+            <span className={`text-sm font-black ${textColor} uppercase tracking-wider`}>
+              {isFaceit ? label : `${label} SIDE`}
+            </span>
           </div>
           <span className="text-xs text-muted-foreground">{team.players.length} Players</span>
         </div>
@@ -263,7 +265,7 @@ function CS2TeamCard({ team, label, color }: any) {
             <div className="text-center w-12">A</div>
             <div className="text-center w-12">D</div>
             <div className="text-center w-14">K/D</div>
-            <div className="text-center w-14">ADR</div>
+            <div className="text-center w-14">{isFaceit ? 'K/R' : 'ADR'}</div>
             <div className="text-center w-14">HS%</div>
             <div className="text-center w-12">MVP</div>
             <div className="text-center w-12">3K</div>
@@ -273,16 +275,24 @@ function CS2TeamCard({ team, label, color }: any) {
 
           {/* Player Rows */}
           {team.players
-            .sort((a: any, b: any) => (b.total_kills || 0) - (a.total_kills || 0))
+            .sort((a: any, b: any) => (b.kills || b.total_kills || 0) - (a.kills || a.total_kills || 0))
             .map((p: any, i: number) => {
-              const adr = Math.round(p.dpr || 0);
-              const hsPercent = p.total_hs_kills && p.total_kills
-                ? Math.round((p.total_hs_kills / p.total_kills) * 100)
-                : 0;
+              const kills = p.kills || p.total_kills || 0;
+              const deaths = p.deaths || p.total_deaths || 0;
+              const assists = p.assists || p.total_assists || 0;
+              const kd = p.kd || p.kd_ratio || 0;
+              const secondaryStat = isFaceit ? (p.kr || 0).toFixed(2) : Math.round(p.dpr || 0);
+              const hsPercent = isFaceit 
+                ? (p.hsPercent || 0)
+                : (p.total_hs_kills && p.total_kills ? Math.round((p.total_hs_kills / p.total_kills) * 100) : 0);
+              const mvps = p.mvps || 0;
+              const tripleKills = p.tripleKills || p.multi3k || 0;
+              const quadroKills = p.quadroKills || p.multi4k || 0;
+              const pentaKills = p.pentaKills || p.multi5k || 0;
 
               return (
                 <motion.div
-                  key={p.steam64_id}
+                  key={isFaceit ? p.playerId : p.steam64_id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
@@ -291,10 +301,10 @@ function CS2TeamCard({ team, label, color }: any) {
                   {/* Avatar */}
                   <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-800 border-2 border-white/10 flex-shrink-0">
                     {p.avatar ? (
-                      <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+                      <img src={p.avatar} alt={p.nickname || p.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xs font-bold text-muted-foreground">
-                        {p.name?.[0]?.toUpperCase() || '?'}
+                        {(p.nickname || p.name)?.[0]?.toUpperCase() || '?'}
                       </div>
                     )}
                   </div>
@@ -302,34 +312,36 @@ function CS2TeamCard({ team, label, color }: any) {
                   {/* Player Name */}
                   <div className="flex flex-col min-w-0">
                     <div className="font-bold text-sm text-foreground truncate">
-                      {p.steam_username || p.name}
+                      {p.nickname || p.steam_username || p.name}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <HiLightningBolt className="w-3 h-3 text-primary" />
-                      <span className="text-[10px] font-mono text-muted-foreground">
-                        {Math.round((p.leetify_rating || 0) * 100)}
-                      </span>
-                    </div>
+                    {!isFaceit && (
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <HiLightningBolt className="w-3 h-3 text-primary" />
+                        <span className="text-[10px] font-mono text-muted-foreground">
+                          {Math.round((p.leetify_rating || 0) * 100)}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Stats */}
-                  <div className="text-center w-12 font-mono font-bold text-emerald-500">{p.total_kills || 0}</div>
-                  <div className="text-center w-12 font-mono font-bold text-blue-500">{p.total_assists || 0}</div>
-                  <div className="text-center w-12 font-mono font-bold text-rose-500">{p.total_deaths || 0}</div>
-                  <div className="text-center w-14 font-mono font-bold text-foreground">{(p.kd_ratio || 0).toFixed(2)}</div>
-                  <div className="text-center w-14 font-mono font-bold text-orange-500">{adr}</div>
+                  <div className="text-center w-12 font-mono font-bold text-emerald-500">{kills}</div>
+                  <div className="text-center w-12 font-mono font-bold text-blue-500">{assists}</div>
+                  <div className="text-center w-12 font-mono font-bold text-rose-500">{deaths}</div>
+                  <div className="text-center w-14 font-mono font-bold text-foreground">{typeof kd === 'number' ? kd.toFixed(2) : kd}</div>
+                  <div className="text-center w-14 font-mono font-bold text-orange-500">{secondaryStat}</div>
                   <div className="text-center w-14 font-mono font-bold text-yellow-500">{hsPercent}%</div>
                   <div className="text-center w-12">
-                    <div className={`inline-flex items-center justify-center w-7 h-7 rounded ${p.mvps > 0 ? 'bg-yellow-500/20 text-yellow-500' : 'bg-zinc-800 text-zinc-600'}`}>
-                      <span className="text-xs font-bold">{p.mvps || 0}</span>
+                    <div className={`inline-flex items-center justify-center w-7 h-7 rounded ${mvps > 0 ? 'bg-yellow-500/20 text-yellow-500' : 'bg-zinc-800 text-zinc-600'}`}>
+                      <span className="text-xs font-bold">{mvps}</span>
                     </div>
                   </div>
-                  <div className="text-center w-12 font-mono text-xs text-muted-foreground">{p.multi3k || 0}</div>
-                  <div className="text-center w-12 font-mono text-xs text-muted-foreground">{p.multi4k || 0}</div>
+                  <div className="text-center w-12 font-mono text-xs text-muted-foreground">{tripleKills}</div>
+                  <div className="text-center w-12 font-mono text-xs text-muted-foreground">{quadroKills}</div>
                   <div className="text-center w-12">
-                    {p.multi5k > 0 ? (
+                    {pentaKills > 0 ? (
                       <div className="inline-flex items-center justify-center px-2 py-1 bg-red-500/20 text-red-500 rounded font-bold text-xs">
-                        {p.multi5k}
+                        {pentaKills}
                       </div>
                     ) : (
                       <span className="font-mono text-xs text-zinc-600">0</span>
@@ -341,34 +353,36 @@ function CS2TeamCard({ team, label, color }: any) {
         </div>
 
         {/* Team Stats Summary */}
-        <div className="mt-4 p-4 bg-zinc-900/60 rounded-lg border border-white/5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <TeamStatBox
-              icon={<HiFire className="w-4 h-4" />}
-              label="Total Kills"
-              value={team.players.reduce((sum: number, p: any) => sum + (p.total_kills || 0), 0)}
-              color="emerald"
-            />
-            <TeamStatBox
-              icon={<GiExplosiveMaterials className="w-4 h-4" />}
-              label="HE Grenades"
-              value={team.players.reduce((sum: number, p: any) => sum + (p.he_thrown || 0), 0)}
-              color="orange"
-            />
-            <TeamStatBox
-              icon={<GiSmokeBomb className="w-4 h-4" />}
-              label="Smokes"
-              value={team.players.reduce((sum: number, p: any) => sum + (p.smoke_thrown || 0), 0)}
-              color="zinc"
-            />
-            <TeamStatBox
-              icon={<GiFlashGrenade className="w-4 h-4" />}
-              label="Flashbangs"
-              value={team.players.reduce((sum: number, p: any) => sum + (p.flashbang_thrown || 0), 0)}
-              color="yellow"
-            />
+        {!isFaceit && (
+          <div className="mt-4 p-4 bg-zinc-900/60 rounded-lg border border-white/5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <TeamStatBox
+                icon={<HiFire className="w-4 h-4" />}
+                label="Total Kills"
+                value={team.players.reduce((sum: number, p: any) => sum + (p.total_kills || 0), 0)}
+                color="emerald"
+              />
+              <TeamStatBox
+                icon={<GiExplosiveMaterials className="w-4 h-4" />}
+                label="HE Grenades"
+                value={team.players.reduce((sum: number, p: any) => sum + (p.he_thrown || 0), 0)}
+                color="orange"
+              />
+              <TeamStatBox
+                icon={<GiSmokeBomb className="w-4 h-4" />}
+                label="Smokes"
+                value={team.players.reduce((sum: number, p: any) => sum + (p.smoke_thrown || 0), 0)}
+                color="zinc"
+              />
+              <TeamStatBox
+                icon={<GiFlashGrenade className="w-4 h-4" />}
+                label="Flashbangs"
+                value={team.players.reduce((sum: number, p: any) => sum + (p.flashbang_thrown || 0), 0)}
+                color="yellow"
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
