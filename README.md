@@ -20,6 +20,13 @@ Vantage is a real-time Intelligence Platform for CS2 players. Consolidate data f
 - Tactical UI - Radar-style scanning animations and professional dashboard
 - Background Processing - BullMQ workers for efficient data scraping
 
+## Screenshots
+
+![Screenshot 1](./screeenshots/1.png)
+![Screenshot 2](./screeenshots/2.png)
+![Screenshot 3](./screeenshots/3.png)
+![Screenshot 4](./screeenshots/4.png)
+
 ---
 
 ## Architecture
