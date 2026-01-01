@@ -222,11 +222,11 @@ export interface WingmanStats {
 
 export interface UserProfile {
   steam: SteamProfile;
-  faceit?: FaceitStats;
-  leetify?: LeetifyStats;
-  premier?: PremierStats;
-  competitive?: CompetitiveStats;
-  wingman?: WingmanStats;
+  faceit?: FaceitStats | null;  // null = explicitly not found (404), undefined = not checked yet
+  leetify?: LeetifyStats | null;
+  premier?: PremierStats | null;
+  competitive?: CompetitiveStats | null;
+  wingman?: WingmanStats | null;
   risk: RiskAssessment;
 }
 

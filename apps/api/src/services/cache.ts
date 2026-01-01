@@ -7,7 +7,7 @@ const redis = new Redis({
   maxRetriesPerRequest: 3,
 });
 
-const CACHE_TTL = 300; // 5 minutes
+const CACHE_TTL = 604800; // 7 days (604800 seconds)
 
 export class CacheService {
   async getProfile(steamId64: string): Promise<UserProfile | null> {
@@ -78,6 +78,49 @@ export class CacheService {
       await redis.setex(key, ttl, JSON.stringify(value));
     } catch (error) {
       console.error('Redis set error:', error);
+    }
+  }
+
+  // Track last refresh time for rate limiting (10 minutes cooldown)
+  async getLastRefreshTime(steamId64: string): Promise<number | null> {
+    try {
+      const timestamp = await redis.get(`refresh:${steamId64}`);
+      return timestamp ? parseInt(timestamp) : null;
+    } catch (error) {
+      console.error('Redis get error:', error);
+      return null;
+    }
+  }
+
+  async setLastRefreshTime(steamId64: string): Promise<void> {
+    try {
+      // Store timestamp for 10 minutes (600 seconds)
+      await redis.setex(`refresh:${steamId64}`, 600, Date.now().toString());
+    } catch (error) {
+      console.error('Redis set error:', error);
+    }
+  }
+
+  async canRefresh(steamId64: string): Promise<{ allowed: boolean; waitTime?: number }> {
+    try {
+      const lastRefresh = await this.getLastRefreshTime(steamId64);
+      if (!lastRefresh) {
+        return { allowed: true };
+      }
+
+      const now = Date.now();
+      const elapsed = now - lastRefresh;
+      const cooldown = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+      if (elapsed < cooldown) {
+        const waitTime = Math.ceil((cooldown - elapsed) / 1000); // seconds remaining
+        return { allowed: false, waitTime };
+      }
+
+      return { allowed: true };
+    } catch (error) {
+      console.error('Redis canRefresh error:', error);
+      return { allowed: true }; // Allow on error
     }
   }
 }

@@ -90,14 +90,14 @@ export async function profileRoutes(fastify: FastifyInstance) {
       const cached = await cacheService.getProfile(steamId64);
       let needsFetch = {
         steam: !cached,
-        faceit: !cached || !cached.faceit,
-        leetify: !cached || !cached.leetify,
+        faceit: !cached || (!cached.faceit && cached.faceit !== null), // null means explicitly not found and cached
+        leetify: !cached || (!cached.leetify && cached.leetify !== null),
         leetifyTeammates: !cached || !cached.leetify?.recent_teammates || 
                           cached.leetify.recent_teammates.length === 0 ||
                           !cached.leetify.recent_teammates[0]?.name, // Check if teammates have profile info
-        premier: !cached || !cached.premier,
-        competitive: !cached || !cached.competitive,
-        wingman: !cached || !cached.wingman,
+        premier: !cached || (!cached.premier && cached.premier !== null),
+        competitive: !cached || (!cached.competitive && cached.competitive !== null),
+        wingman: !cached || (!cached.wingman && cached.wingman !== null),
       };
 
       // If everything is cached, return immediately
@@ -151,12 +151,13 @@ export async function profileRoutes(fastify: FastifyInstance) {
       });
 
       // Merge cached data with newly fetched data
+      // Use null to explicitly mark "not found" results (404), which should be cached
       const steam = fetchedData.steam || cached?.steam;
-      const faceit = fetchedData.faceit || cached?.faceit;
-      const leetify = fetchedData.leetify || cached?.leetify;
-      const premier = fetchedData.premier || cached?.premier;
-      const competitive = fetchedData.competitive || cached?.competitive;
-      const wingman = fetchedData.wingman || cached?.wingman;
+      const faceit = fetchedData.faceit !== undefined ? fetchedData.faceit : (cached?.faceit ?? null);
+      const leetify = fetchedData.leetify !== undefined ? fetchedData.leetify : (cached?.leetify ?? null);
+      const premier = fetchedData.premier !== undefined ? fetchedData.premier : (cached?.premier ?? null);
+      const competitive = fetchedData.competitive !== undefined ? fetchedData.competitive : (cached?.competitive ?? null);
+      const wingman = fetchedData.wingman !== undefined ? fetchedData.wingman : (cached?.wingman ?? null);
 
       if (!steam) {
         throw new Error('Failed to fetch Steam profile');
@@ -191,14 +192,14 @@ export async function profileRoutes(fastify: FastifyInstance) {
         leetify: leetify || undefined,
       });
 
-      // 6. Build profile
+      // 6. Build profile (preserve null values to indicate "not found" data)
       const profile: UserProfile = {
-        premier: premier || undefined,
-        competitive: competitive || undefined,
-        wingman: wingman || undefined,
         steam,
-        faceit: faceit || undefined,
-        leetify: leetify || undefined,
+        faceit: faceit === null ? null : (faceit || undefined),
+        leetify: leetify === null ? null : (leetify || undefined),
+        premier: premier === null ? null : (premier || undefined),
+        competitive: competitive === null ? null : (competitive || undefined),
+        wingman: wingman === null ? null : (wingman || undefined),
         risk,
       };
 
@@ -248,6 +249,104 @@ export async function profileRoutes(fastify: FastifyInstance) {
       return reply.status(404).send({
         success: false,
         error: 'Job not found',
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  // Endpoint to invalidate cache and refresh a profile (rate limited to once per 10 minutes)
+  fastify.post<{
+    Params: { id: string };
+  }>('/profile/:id/refresh', async (request, reply) => {
+    const { id } = request.params;
+
+    try {
+      // 1. Resolve to SteamID64
+      const steamId64 = await resolveUser(id);
+
+      // 2. Check if refresh is allowed (10-minute cooldown)
+      const canRefresh = await cacheService.canRefresh(steamId64);
+      if (!canRefresh.allowed) {
+        const minutes = Math.floor(canRefresh.waitTime! / 60);
+        const seconds = canRefresh.waitTime! % 60;
+        return reply.status(429).send({
+          success: false,
+          error: `Profile can only be refreshed once every 10 minutes. Please wait ${minutes}m ${seconds}s.`,
+          waitTime: canRefresh.waitTime,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // 3. Invalidate cache
+      await cacheService.invalidateProfile(steamId64);
+
+      // 4. Record refresh time
+      await cacheService.setLastRefreshTime(steamId64);
+
+      return {
+        success: true,
+        message: 'Cache invalidated. Refresh the page to fetch latest data.',
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(400).send({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to refresh profile',
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  // Endpoint to refresh only match history (no rate limit)
+  fastify.post<{
+    Params: { id: string };
+  }>('/profile/:id/refresh-matches', async (request, reply) => {
+    const { id } = request.params;
+
+    try {
+      // 1. Resolve to SteamID64
+      const steamId64 = await resolveUser(id);
+
+      // 2. Get current cached profile
+      const cached = await cacheService.getProfile(steamId64);
+      if (!cached) {
+        return reply.status(404).send({
+          success: false,
+          error: 'Profile not found in cache. Please load the profile first.',
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // 3. Fetch fresh match data
+      const [faceit, leetify] = await Promise.allSettled([
+        faceitService.getStats(steamId64).catch(() => null),
+        leetifyService.getStats(steamId64).catch(() => null),
+      ]);
+
+      const faceitData = faceit.status === 'fulfilled' ? faceit.value : null;
+      const leetifyData = leetify.status === 'fulfilled' ? leetify.value : null;
+
+      // 4. Update only match history in cached profile
+      const updatedProfile = {
+        ...cached,
+        faceit: faceitData ? { ...cached.faceit, ...faceitData, matchHistory: faceitData.matchHistory } : cached.faceit,
+        leetify: leetifyData ? { ...cached.leetify, ...leetifyData, match_history: leetifyData.match_history, recent_matches: leetifyData.recent_matches } : cached.leetify,
+      };
+
+      // 5. Save updated profile to cache
+      await cacheService.setProfile(steamId64, updatedProfile);
+
+      return {
+        success: true,
+        message: 'Match history refreshed successfully.',
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      fastify.log.error(error);
+      return reply.status(400).send({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to refresh matches',
         timestamp: new Date().toISOString(),
       });
     }

@@ -212,7 +212,7 @@ export class FaceitService {
         // Lifetime Stats
         matches: parseInt(lifetime.Matches) || 0,
         wins: parseInt(lifetime.Wins) || 0,
-        winRate: parseFloat(lifetime['Win Rate %']) || 0,
+        winRate: (parseFloat(lifetime['Win Rate %']) || 0) / 100,
         
         // K/D Stats
         totalKills: parseInt(lifetime['Total Kills']) || 0,

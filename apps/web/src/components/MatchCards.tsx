@@ -2,6 +2,8 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiChevronDown, HiChevronUp, HiDownload } from 'react-icons/hi';
+import { SiFaceit } from 'react-icons/si';
+import { HiLightningBolt } from 'react-icons/hi';
 import type { LeetifyRecentMatch } from '@vantage/shared';
 
 // --- Leetify Card ---
@@ -32,7 +34,10 @@ export function LeetifyMatchCard({ match, steamId, expanded, onToggle, onViewSco
           {/* Main Info */}
           <div className="flex-1 min-w-0 grid grid-cols-2 md:grid-cols-4 gap-4 items-center w-full">
             <div>
-              <div className="font-bold text-foreground truncate">{match.map_name}</div>
+              <div className="flex items-center gap-2 mb-1">
+                <HiLightningBolt className="text-purple-500 w-3.5 h-3.5 shrink-0" title="Leetify" />
+                <div className="font-bold text-foreground truncate">{match.map_name}</div>
+              </div>
               <div className="text-xs text-muted-foreground">{new Date(match.finished_at).toLocaleDateString()}</div>
             </div>
             
@@ -129,7 +134,10 @@ export function FaceitMatchCard({ match, onViewScoreboard }: any) {
       
       <div className="flex-1 p-3 md:p-4 flex items-center justify-between">
         <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
-          <div className="font-bold text-foreground w-24">{match.map}</div>
+          <div className="flex items-center gap-2">
+            <SiFaceit className="text-[#FF5500] w-3.5 h-3.5 shrink-0" title="FACEIT" />
+            <div className="font-bold text-foreground w-24">{match.map}</div>
+          </div>
           <div className="font-mono text-lg font-bold">
             <span className={isWin ? 'text-emerald-500' : 'text-rose-500'}>{match.score}</span>
           </div>
@@ -164,6 +172,7 @@ export function LeetifyRecentMatchCard({ match }: { match: LeetifyRecentMatch })
     <div className="bg-card rounded border border-border p-3 flex items-center justify-between">
        <div className="flex items-center gap-3">
          <div className={`w-2 h-2 rounded-full ${isWin ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+         <HiLightningBolt className="text-purple-500 w-3.5 h-3.5 shrink-0" title="Leetify" />
          <span className="font-medium text-sm">{match.map_name}</span>
        </div>
        <div className="flex gap-4 text-sm font-mono text-muted-foreground">

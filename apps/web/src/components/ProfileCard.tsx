@@ -68,14 +68,16 @@ export default function ProfileCard({ profile }: { profile: UserProfile }) {
 
           {/* Steam Stats (Hours) */}
           {steam.cs2Stats && steam.cs2Stats.hoursPlayed && steam.cs2Stats.hoursPlayed > 0 && (
-            <div className="hidden md:block text-right space-y-1 p-4 bg-secondary/30 rounded-lg border border-border/50">
-              <div className="text-xs font-bold text-muted-foreground uppercase">Playtime</div>
-              <div className="text-2xl font-mono font-bold text-foreground">
-                {steam.cs2Stats.hoursPlayed?.toLocaleString() ?? 0}<span className="text-sm text-muted-foreground ml-1">hrs</span>
+            <div className="hidden md:block text-right space-y-2 p-5 bg-card border border-border rounded-xl shadow-sm">
+              <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Playtime</div>
+              <div className="text-3xl font-mono font-black text-foreground">
+                {steam.cs2Stats.hoursPlayed?.toLocaleString() ?? 0}<span className="text-sm text-muted-foreground font-normal ml-1">hrs</span>
               </div>
-              <div className="text-xs text-muted-foreground">
-                {steam.cs2Stats.winRate !== undefined ? `${(steam.cs2Stats.winRate * 100).toFixed(1)}% Winrate` : ''}
-              </div>
+              {steam.cs2Stats.winRate !== undefined && (
+                <div className="text-sm font-medium text-muted-foreground">
+                  {(steam.cs2Stats.winRate * 100).toFixed(1)}% Winrate
+                </div>
+              )}
             </div>
           )}
         </div>

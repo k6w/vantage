@@ -101,7 +101,7 @@ export class SteamService {
         totalWins: totalMatchesWon || totalWins,
         totalMatches: totalRoundsPlayed ? Math.floor(totalRoundsPlayed / 24) : undefined,
         winRate: totalRoundsPlayed && totalMatchesWon
-          ? parseFloat(((totalMatchesWon / (totalRoundsPlayed / 24)) * 100).toFixed(1))
+          ? parseFloat((totalMatchesWon / (totalRoundsPlayed / 24)).toFixed(3))
           : undefined,
         totalRoundsPlayed,
         totalDamage: findStat('total_damage_done'),
