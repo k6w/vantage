@@ -7,10 +7,10 @@ const STEAM_API_BASE = 'https://api.steampowered.com';
 export class SteamService {
   private cs2Service = new CS2Service();
 
-  async getProfile(steamId64: string): Promise<SteamProfile> {
-    const STEAM_API_KEY = process.env.STEAM_API_KEY;
+  async getProfile(steamId64: string, apiKey?: string): Promise<SteamProfile> {
+    const STEAM_API_KEY = apiKey || process.env.STEAM_API_KEY;
     if (!STEAM_API_KEY) {
-      throw new Error('STEAM_API_KEY not configured');
+      throw new Error('STEAM_API_KEY required. Please provide your Steam API key.');
     }
     
     // Fetch ALL available data in parallel
@@ -129,10 +129,7 @@ export class SteamService {
       isPrivate: player.communityvisibilitystate !== 3,
       vacBanned: bans?.VACBanned || false,
       gameBanned: bans?.NumberOfGameBans > 0 || false,
-      numberOfVACBans: bans?.NumberOfVACBans || 0,
-      numberOfGameBans: bans?.NumberOfGameBans || 0,
       daysSinceLastBan: bans?.DaysSinceLastBan,
-      economyBan: bans?.EconomyBan,
       communityBanned: bans?.CommunityBanned || false,
       country: player.loccountrycode,
       state: player.locstatecode,

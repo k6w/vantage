@@ -4,10 +4,10 @@ import type { FaceitStats } from '@vantage/shared';
 const FACEIT_API_BASE = 'https://open.faceit.com/data/v4';
 
 export class FaceitService {
-  async getStats(steamId64: string): Promise<FaceitStats | null> {
-    const FACEIT_API_KEY = process.env.FACEIT_API_KEY;
+  async getStats(steamId64: string, apiKey?: string): Promise<FaceitStats | null> {
+    const FACEIT_API_KEY = apiKey || process.env.FACEIT_API_KEY;
     if (!FACEIT_API_KEY) {
-      console.warn('FACEIT_API_KEY not configured');
+      console.warn('FACEIT_API_KEY not provided');
       return null;
     }
     
@@ -236,12 +236,16 @@ export class FaceitService {
         
         // Bans
         hasBan,
-        activeBans: activeBans.map(ban => ({
-          reason: ban.reason,
-          startsAt: ban.starts_at,
-          endsAt: ban.ends_at,
-          type: ban.type,
-        })),
+        activeBans: activeBans.map(ban => {
+          const startsAt = new Date(ban.starts_at);
+          const endsAt = new Date(ban.ends_at);
+          const durationMs = endsAt.getTime() - startsAt.getTime();
+          const durationDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+          return {
+            reason: ban.reason,
+            duration: durationDays > 0 ? `${durationDays} days` : 'Permanent',
+          };
+        }),
         
         // Additional Info
         accountAge: player.activated_at ? 

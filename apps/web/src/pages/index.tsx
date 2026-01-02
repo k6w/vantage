@@ -9,8 +9,6 @@ import { useRouter } from 'next/router';
 import CaptchaModal from '../components/CaptchaModal';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
 export default function Home() {
   const router = useRouter();
   const [isSearching, setIsSearching] = useState(false);
@@ -21,7 +19,7 @@ export default function Home() {
   const [pendingQuery, setPendingQuery] = useState<string>('');
 
   const fetchSearchCount = () => {
-    fetch('http://localhost:3001/api/stats')
+    fetch('/api/stats')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.data.totalSearches) {
@@ -45,7 +43,7 @@ export default function Home() {
     
     try {
       // Check if we're rate limited by making a test request
-      const response = await axios.get(`${API_URL}/api/profile/${encodeURIComponent(query)}`);
+      const response = await axios.get(`/api/profile/${encodeURIComponent(query)}`);
       
       if (response.data.success) {
         router.push(`/profile/${encodeURIComponent(query)}`);
@@ -75,7 +73,7 @@ export default function Home() {
     try {
       // Retry the search with reCAPTCHA token
       const response = await axios.get(
-        `${API_URL}/api/profile/${encodeURIComponent(pendingQuery)}?recaptcha_token=${encodeURIComponent(token)}`
+        `/api/profile/${encodeURIComponent(pendingQuery)}?recaptcha_token=${encodeURIComponent(token)}`
       );
 
       if (response.data.success) {

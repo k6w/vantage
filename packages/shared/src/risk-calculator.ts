@@ -91,7 +91,6 @@ export function calculateRiskScore(data: RiskCalculationInput): RiskAssessment {
   
   // Flag 4: Low Steam Level for Hours Played (+12)
   if (data.steam.level !== undefined && data.steam.cs2Stats?.hoursPlayed) {
-    const expectedLevel = Math.floor(data.steam.cs2Stats.hoursPlayed / 100); // Rough estimate
     if (data.steam.level < 5 && data.steam.cs2Stats.hoursPlayed > 500) {
       const weight = 12;
       flags.push({

@@ -50,6 +50,7 @@ export class RateLimitService {
     
     // Initialize Redis connection for general operations
     this.redis = new Redis(redisConnectionUrl, {
+      password: process.env.REDIS_PASSWORD || undefined,
       retryStrategy: (times) => {
         if (times > 3) {
           console.error('Redis connection failed after 3 retries');
@@ -69,6 +70,7 @@ export class RateLimitService {
 
     // Initialize separate Redis connection for BullMQ with required options
     this.bullMQRedis = new Redis(redisConnectionUrl, {
+      password: process.env.REDIS_PASSWORD || undefined,
       maxRetriesPerRequest: null, // Required for BullMQ blocking operations
     });
 

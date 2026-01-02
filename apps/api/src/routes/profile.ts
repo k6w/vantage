@@ -29,6 +29,11 @@ export async function profileRoutes(fastify: FastifyInstance) {
     const userAgent = request.headers['user-agent'];
     const forwardedFor = request.headers['x-forwarded-for'] as string | undefined;
 
+    // Extract API keys from headers
+    const steamApiKey = request.headers['x-steam-api-key'] as string | undefined;
+    const faceitApiKey = request.headers['x-faceit-api-key'] as string | undefined;
+    const leetifyApiKey = request.headers['x-leetify-api-key'] as string | undefined;
+
     try {
       // Generate secure client key to prevent bypass attempts
       const clientKey = RateLimitService.getClientKey(clientIP, userAgent, forwardedFor);
@@ -118,15 +123,15 @@ export async function profileRoutes(fastify: FastifyInstance) {
 
       if (needsFetch.steam) {
         fetchKeys.push('steam');
-        fetchPromises.push(steamService.getProfile(steamId64));
+        fetchPromises.push(steamService.getProfile(steamId64, steamApiKey));
       }
       if (needsFetch.faceit) {
         fetchKeys.push('faceit');
-        fetchPromises.push(faceitService.getStats(steamId64).catch(() => null));
+        fetchPromises.push(faceitService.getStats(steamId64, faceitApiKey).catch(() => null));
       }
       if (needsFetch.leetify) {
         fetchKeys.push('leetify');
-        fetchPromises.push(leetifyService.getStats(steamId64).catch(() => null));
+        fetchPromises.push(leetifyService.getStats(steamId64, true, leetifyApiKey).catch(() => null));
       }
       if (needsFetch.premier) {
         fetchKeys.push('premier');
@@ -168,7 +173,7 @@ export async function profileRoutes(fastify: FastifyInstance) {
         const teammateProfiles = await Promise.allSettled(
           leetify.recent_teammates.slice(0, 6).map(async (teammate: any) => {
             try {
-              const profile = await steamService.getProfile(teammate.steam64_id);
+              const profile = await steamService.getProfile(teammate.steam64_id, steamApiKey);
               return {
                 ...teammate,
                 name: profile.username,

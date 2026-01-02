@@ -16,6 +16,10 @@ export async function matchesRoutes(fastify: FastifyInstance) {
     const { dataSource, dataSourceId } = request.params;
     const cacheKey = `match:${dataSource}:${dataSourceId}`;
 
+    // Extract API keys from headers
+    const steamApiKey = request.headers['x-steam-api-key'] as string | undefined;
+    const leetifyApiKey = request.headers['x-leetify-api-key'] as string | undefined;
+
     try {
       // Check cache first
       const cached = await cacheService.get(cacheKey);
@@ -32,7 +36,8 @@ export async function matchesRoutes(fastify: FastifyInstance) {
 
       const matchDetails = await leetifyService.getMatchByDataSource(
         dataSource,
-        dataSourceId
+        dataSourceId,
+        leetifyApiKey
       );
 
       if (!matchDetails) {
@@ -47,7 +52,7 @@ export async function matchesRoutes(fastify: FastifyInstance) {
       const steamIds = matchDetails.stats.map(s => s.steam64_id);
       const avatarPromises = steamIds.map(async (steamId) => {
         try {
-          const profile = await steamService.getProfile(steamId);
+          const profile = await steamService.getProfile(steamId, steamApiKey);
           return { steamId, avatar: profile.avatar, username: profile.username };
         } catch (error) {
           fastify.log.warn(`Failed to fetch Steam profile for ${steamId}`);

@@ -44,7 +44,7 @@ export default function MatchHistory({ faceitMatches, leetifyStats, onRefresh }:
         return;
       }
 
-      const response = await fetch(`http://localhost:3001/api/matches/${dataSource}/${dataSourceId}`);
+      const response = await fetch(`/api/matches/${dataSource}/${dataSourceId}`);
       
       if (response.ok) {
         const result = await response.json();

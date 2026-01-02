@@ -4,8 +4,8 @@ import type { LeetifyStats, LeetifyMatchDetails } from '@vantage/shared';
 const LEETIFY_API_BASE = 'https://api-public.cs-prod.leetify.com';
 
 export class LeetifyService {
-  private getHeaders(): Record<string, string> {
-    const LEETIFY_API_KEY = process.env.LEETIFY_API_KEY;
+  private getHeaders(apiKey?: string): Record<string, string> {
+    const LEETIFY_API_KEY = apiKey || process.env.LEETIFY_API_KEY;
     const headers: Record<string, string> = {};
     if (LEETIFY_API_KEY) {
       headers['Authorization'] = LEETIFY_API_KEY;
@@ -17,9 +17,9 @@ export class LeetifyService {
    * Get complete Leetify profile with ALL available data
    * Includes: profile info, ranks, ratings, stats, recent matches, recent teammates
    */
-  async getStats(steamId64: string, includeMatchHistory = true): Promise<LeetifyStats | null> {
+  async getStats(steamId64: string, includeMatchHistory = true, apiKey?: string): Promise<LeetifyStats | null> {
     try {
-      const headers = this.getHeaders();
+      const headers = this.getHeaders(apiKey);
       
       // Get profile data from v3 endpoint
       const response = await axios.get(`${LEETIFY_API_BASE}/v3/profile`, {
@@ -38,7 +38,7 @@ export class LeetifyService {
       // Get full match history if requested
       let matchHistory: LeetifyMatchDetails[] | undefined;
       if (includeMatchHistory) {
-        matchHistory = await this.getMatchHistory(steamId64);
+        matchHistory = await this.getMatchHistory(steamId64, 10, apiKey);
       }
       
       // Return ALL the data from Leetify
@@ -61,9 +61,9 @@ export class LeetifyService {
    * Uses v3 endpoint for CS2 matches
    * Returns basic match data - use getMatchByDataSource for full player stats
    */
-  async getMatchHistory(steamId64: string, limit: number = 10): Promise<LeetifyMatchDetails[]> {
+  async getMatchHistory(steamId64: string, limit: number = 10, apiKey?: string): Promise<LeetifyMatchDetails[]> {
     try {
-      const headers = this.getHeaders();
+      const headers = this.getHeaders(apiKey);
       
       const response = await axios.get(`${LEETIFY_API_BASE}/v3/profile/matches`, {
         params: { steam64_id: steamId64 },
@@ -89,9 +89,9 @@ export class LeetifyService {
    * Uses v2 endpoint for match details
    * @param matchId - The Leetify match ID (game ID)
    */
-  async getMatchDetails(matchId: string): Promise<LeetifyMatchDetails | null> {
+  async getMatchDetails(matchId: string, apiKey?: string): Promise<LeetifyMatchDetails | null> {
     try {
-      const headers = this.getHeaders();
+      const headers = this.getHeaders(apiKey);
       
       const response = await axios.get(`${LEETIFY_API_BASE}/v2/matches/${matchId}`, {
         headers,
@@ -113,10 +113,11 @@ export class LeetifyService {
    */
   async getMatchByDataSource(
     dataSource: string,
-    dataSourceId: string
+    dataSourceId: string,
+    apiKey?: string
   ): Promise<LeetifyMatchDetails | null> {
     try {
-      const headers = this.getHeaders();
+      const headers = this.getHeaders(apiKey);
       
       const response = await axios.get(
         `${LEETIFY_API_BASE}/v2/matches/${dataSource}/${dataSourceId}`,

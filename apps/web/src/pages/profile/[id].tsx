@@ -14,8 +14,6 @@ import CaptchaModal from '../../components/CaptchaModal';
 import DetailedStats from '../../components/DetailedStats';
 import type { UserProfile, ApiResponse } from '@vantage/shared';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-
 export default function ProfilePage() {
   const router = useRouter();
   const { id } = router.query;
@@ -29,7 +27,7 @@ export default function ProfilePage() {
     queryFn: async () => {
       if (!id) return null;
       try {
-        const res = await axios.get<ApiResponse<UserProfile>>(`${API_URL}/api/profile/${id}`);
+        const res = await axios.get<ApiResponse<UserProfile>>(`/api/profile/${id}`);
         return res.data;
       } catch (err: any) {
         if (err.response?.status === 429) {
@@ -49,7 +47,7 @@ export default function ProfilePage() {
     setIsRefreshing(true);
     setRefreshError(null);
     try {
-      const response = await axios.post(`${API_URL}/api/profile/${id}/refresh`);
+      const response = await axios.post(`/api/profile/${id}/refresh`);
       if (response.data.success) {
         await refetch();
       }
@@ -68,7 +66,7 @@ export default function ProfilePage() {
     setIsRefreshingMatches(true);
     setRefreshError(null);
     try {
-      const response = await axios.post(`${API_URL}/api/profile/${id}/refresh-matches`);
+      const response = await axios.post(`/api/profile/${id}/refresh-matches`);
       if (response.data.success) {
         await refetch();
       }

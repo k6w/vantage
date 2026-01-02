@@ -7,6 +7,7 @@ Vantage is a real-time Intelligence Platform for CS2 players. Consolidate data f
 ## Documentation
 
 - [Quick Start Guide](QUICKSTART.md) - Detailed setup instructions
+- [Security Implementation](docs/SECURITY.md) - API key protection and security architecture
 - [License](LICENSE) - Terms and conditions
 
 ---
@@ -98,7 +99,7 @@ Copy the example environment file:
 cp .env.example .env
 ```
 
-Edit `.env` and add your API keys:
+Edit `.env` and add your external API keys:
 
 ```env
 # Database
@@ -108,26 +109,27 @@ DATABASE_URL="postgresql://vantage:vantage_dev@localhost:5432/vantage?schema=pub
 REDIS_HOST="localhost"
 REDIS_PORT=6379
 
-# Steam API
+# External API Keys - Get yours from:
+# Steam: https://steamcommunity.com/dev/apikey
+# Faceit: https://developers.faceit.com/
+# Leetify: Contact Leetify for API access
 STEAM_API_KEY="your_steam_api_key_here"
-
-# Faceit API
 FACEIT_API_KEY="your_faceit_api_key_here"
-
-# Leetify API
 LEETIFY_API_KEY="your_leetify_api_key_here"
 
 # Server
 API_PORT=3001
 API_HOST="localhost"
 
-# Frontend
-NEXT_PUBLIC_API_URL="http://localhost:3001"
+# Backend API URL
+BACKEND_API_URL="http://localhost:3001"
 
-# reCAPTCHA (disabled in development)
+# reCAPTCHA (optional)
 RECAPTCHA_SECRET_KEY="your_recaptcha_secret_key_here"
 NEXT_PUBLIC_RECAPTCHA_SITE_KEY="your_recaptcha_site_key_here"
 ```
+
+**🔒 Security Note**: API keys are stored server-side only and never exposed to browsers. See [docs/SECURITY.md](docs/SECURITY.md) for details.
 
 ### 3. Start Services
 
